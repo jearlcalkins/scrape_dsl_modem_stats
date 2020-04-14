@@ -23,9 +23,9 @@ ssh into the pi account, or use the desktop terminal to:
 
 `sudo apt-get update`  
 `sudo apt-get upgrade`  
-`sudo apt-get install xvfb`
-`sudo pip3 install pyvirtualdisplay` 
-`sudo apt-get install chromium-chromedriver`  
+`sudo apt-get install xvfb`  
+`sudo pip3 install pyvirtualdisplay`   
+`sudo apt-get install chromium-chromedriver`    
 `pip3 install -U selenium`  
  
 
