@@ -36,7 +36,8 @@ def get_modem(ip):
     options.add_argument("--test-type")
     options.binary_location = "/usr/bin/chromium-browser"
     driver = webdriver.Chrome(options=options)
-    driver.get('http://192.168.0.1')
+    url = 'http://' + ip
+    driver.get(url)
     return driver
 
 def enter_pw(pw):
@@ -44,7 +45,7 @@ def enter_pw(pw):
     while ctr < 6:
         try:
             passwordElement = driver.find_element_by_xpath("//input[@id='admin_password']")
-            passwordElement.send_keys("uxWxrj5g")
+            passwordElement.send_keys(pw)
             ctr = 0
             break
         except NoSuchElementException as Exception:
@@ -302,14 +303,16 @@ def doDsl1():
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-u', default='admin', help="username")
+parser.add_argument('-i', default='192.168.0.1', help="ip")
 parser.add_argument('-p', required=True, help="password")
 args = parser.parse_args()
 username = args.u
 password = args.p
+ip = args.i
 
 goheadless()
 
-driver = get_modem('192.168.0.1')
+driver = get_modem(ip)
 enter_pw(password)
 enter_user(username)
 login_button = driver.find_element_by_xpath("//a[@id='login_apply_btn']").click()
