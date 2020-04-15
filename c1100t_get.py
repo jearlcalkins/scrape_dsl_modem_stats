@@ -16,6 +16,15 @@ import argparse
 # environment: raspberry pi 2 model B v 1.1 ... 2014
 # Raspbian GNU/Linux 10 (buster) - debian
 
+# change the below, and they become your defaults.  you can always override these 
+# variables on the passline
+# from a security perspective, you can hard code your password here, or you
+# can call this application, and pass the password on the command line
+# your call
+password = 'CHANGEMETOYOURMODEMPASSWORD'
+ip = '192.168.0.1'
+username = 'admin'
+
 data = {}
 samples = {}
 units = {}
@@ -302,9 +311,9 @@ def doDsl1():
     return -1
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-u', default='admin', help="username")
-parser.add_argument('-i', default='192.168.0.1', help="ip")
-parser.add_argument('-p', required=True, help="password")
+parser.add_argument('-u', default=username, help="username")
+parser.add_argument('-i', default=ip, help="ip")
+parser.add_argument('-p', default=password, help="password")
 args = parser.parse_args()
 username = args.u
 password = args.p
