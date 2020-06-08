@@ -99,4 +99,5 @@ BTW, I found a bash shell issue when passing a password, that happened to contai
 
 The plant or DSLAM equipment, or possibly the DSLAM modem configs could be problematic.  There are periodic outages, seemingly tied to drops in SNR and power, during days of rain.  The packet data is quite bursty, suggesting possible duration times of packet retries.
 
-TimeSeries view of packet, SNR and power
+![TimeSeries packet, SNR, power](/scrape_dsl_modem_stats/blob/master/DSLmodemstats.png)
+
