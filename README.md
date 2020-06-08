@@ -97,7 +97,7 @@ BTW, I found a bash shell issue when passing a password, that happened to contai
 
 #### TimeSeries for packets, SNR and power
 
-The plant or DSLAM equipment, or possibly the DSLAM modem configs could be problematic.  There are periodic outages, seemingly tied to drops in SNR and power, during days of rain.  The packet data is quite bursty, suggesting possible duration times of packet retries.
+The plant or DSLAM equipment, or possibly the DSLAM modem configs could be problematic.  There are periodic outages, seemingly tied to drops in SNR and power, during days of rain.  The packet data is quite bursty, suggesting possible times where there are excessive packet retries. The FEC (forward error correction) counts can see 80K daily counts, before the modem is rebooted nightly. Some days the modem will see FEC bursts and >150K FEC counts a day. 
 
 ![TimeSeries packet, SNR, power](https://github.com/jearlcalkins/scrape_dsl_modem_stats/blob/master/DSLmodemstats.png)
 
