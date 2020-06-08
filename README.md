@@ -94,3 +94,9 @@ run the application, passing the modem's password 'G0CUBz':
 `python3 c1100t_get.py -p G0CUBz`  
 
 BTW, I found a bash shell issue when passing a password, that happened to contain a '!' (aka a bang), followed by a number.  When passing a password like: 'Clxy!123', bash passed the application 'Clxy', then looked-up the 123rd line of bash history, and passed that command to the python applicaton. The application was confused and crashed, when it was passed 'Clxy' and a historical bash command.  Because I like '!' special characters in my passwords, this caused problems and led me to hardcoding the password, in the application code.
+
+#### TimeSeries for packets, SNR and power
+
+The plant or DSLAM equipment, or possibly the DSLAM modem configs could be problematic.  There are periodic outages, seemingly tied to drops in SNR and power, during days of rain.  The packet data is quite bursty, suggesting possible duration times of packet retries.
+
+TimeSeries view of packet, SNR and power
