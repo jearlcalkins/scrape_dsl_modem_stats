@@ -36,15 +36,19 @@ the following is a 4 record snippet of the out.txt CSV file:
 
 #### Logged router end point stats
 
-the following json snippet is for a 
+the following json snippet is one record from the file: **jsonEndpoint.txt**
 
-`{"1591714802709": {"device": "rokuOldEthernet", "protocol": "tcp/41614", "destinationIp": "3.84.46.120", "sessions": "2", "pcktTx": "258", "pcktRx": "17971"}}
-{"1591714802709": {"device": "rokuOldEthernet", "protocol": "udp/01975", "destinationIp": "172.29.243.255", "sessions": "2", "pcktTx": "2", "pcktRx": "0"}}
-{"1591714802709": {"device": "rokuOldEthernet", "protocol": "tcp/48743", "destinationIp": "13.35.125.51", "sessions": "2", "pcktTx": "910", "pcktRx": "17820"}}
-{"1591714802709": {"device": "rokuOldEthernet", "protocol": "tcp/43186", "destinationIp": "199.117.103.146", "sessions": "2", "pcktTx": "141085", "pcktRx": "475046"}}
-{"1591714802709": {"device": "rokuOldEthernet", "protocol": "tcp/55354", "destinationIp": "50.18.203.14", "sessions": "1", "pcktTx": "6", "pcktRx": "3"}}
-{"1591714802709": {"device": "rokuOldEthernet", "protocol": "tcp/33734", "destinationIp": "199.117.103.144", "sessions": "2", "pcktTx": "8650", "pcktRx": "968761"}}
-{"1591714802709": {"device": "rokuOldEthernet", "protocol": "udp/53142", "destinationIp": "192.168.0.1", "sessions": "1", "pcktTx": "1", "pcktRx": "1"}}`
+`{"1591714802709": {"device": "rokuOldEthernet", "protocol": "tcp/41614", "destinationIp": "3.84.46.120", "sessions": "2", "pcktTx": "258", "pcktRx": "17971"}}`
+
+1591714802709  (timestamp key for the following variables):
+1. device - rokuOldEthernet (an alias, for IP hosts, inside the NAT)
+2. protocol - tcp/41614
+3. destinationIp - 3.84.46.120
+4. sessions - 2
+5. pcktTx - 258
+6. pcktRx - 17971
+
+
 
 #### the following installation is for a Raspberry Pi (RPI)
 Am currently running this on an older RPI 2  
