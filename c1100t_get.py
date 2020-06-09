@@ -1,10 +1,12 @@
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from pyvirtualdisplay import Display
+import os
 import re
 import time
 import json
 import argparse
+
 #
 # author: jeff calkins
 # date: 04-13-2020
@@ -16,28 +18,15 @@ import argparse
 # environment: raspberry pi 2 model B v 1.1 ... 2014
 # Raspbian GNU/Linux 10 (buster) - debian
 
-# change the below, and they become your defaults.  you can always override these 
-# variables on the passline
-# from a security perspective, you can hard code your password here, or you
-# can call this application, and pass the password on the command line
-# your call
-password = 'CHANGEMETOYOURMODEMPASSWORD'
-ip = '192.168.0.1'
-username = 'admin'
-
-data = {}
-samples = {}
-units = {}
-
-
 def refp(astr):
     pfp = re.compile('([-+]?[0-9]*\.?[0-9]+).+')
     result = pfp.search(astr)
     return result.group(1)
 
-def goheadless():
-    display = Display(visible=0, size=(800, 600))
-    display.start()
+def maybe_goheadless(monitor):
+    if monitor == 'no':
+        display = Display(visible=0, size=(800, 600))
+        display.start()
 
 def get_modem(ip):
     options = webdriver.ChromeOptions()
@@ -94,13 +83,12 @@ def get_dsl_status():
     #print("dslDownstream:",refp(dslDownstreamElement.text), " Mbps")
     #print("dslLineStatus:", dslLineStatusElement.text)
 
-    results = list()
     ctr = 1
+    sample = {}
     while ctr < 4:
         try:
             dslUpstreamElement = driver.find_element_by_xpath("//td[@id='UpStream']")
-            results.append(float(refp(dslUpstreamElement.text)))
-            samples['dslUpstreamElement'] = float(refp(dslUpstreamElement.text)) 
+            sample['dslUpstreamElement'] = float(refp(dslUpstreamElement.text)) 
             ctr = 0
             break
         except NoSuchElementException as Exception:
@@ -110,20 +98,17 @@ def get_dsl_status():
 
     if ctr == 0:
         dslDownstreamElement = driver.find_element_by_xpath("//td[@id='DownStream']")
-        results.append(float(refp(dslDownstreamElement.text)))
-        samples['dslDownstreamElement'] = float(refp(dslDownstreamElement.text))
+        sample['dslDownstreamElement'] = float(refp(dslDownstreamElement.text))
 
         dslLineStatusElement = driver.find_element_by_xpath("//td[@id='LineStatus']")
-        results.append(dslLineStatusElement.text)
-        samples['dslLineStatusElement'] = dslLineStatusElement.text
+        sample['dslLineStatusElement'] = dslLineStatusElement.text
 
-        return results
+        return sample
     else:
-        samples['dslUpstreamElement'] = -1.0 
-        samples['dslDownstreamElement'] = -1.0 
-        samples['dslLineStatusElement'] = 'NULL' 
-        return [-1.0, -1.0, 'NULL']
-
+        sample['dslUpstreamElement'] = -1.0 
+        sample['dslDownstreamElement'] = -1.0 
+        sample['dslLineStatusElement'] = 'NULL' 
+        return sample 
 
 def get_dsl_transport():
     # the data in the <p> DSL Transport </p> and its <table> holds
@@ -144,13 +129,13 @@ def get_dsl_transport():
     #print("Total_Usage_Upstream:", refp(Total_Usage_Upstream.text))
     #Total_Usage: 3185.579 Mbits
     #Packets: 2831756
-    results = list()
+
+    sample = {}
     ctr = 1
     while ctr < 4:
         try:
             Packets_Downstream = driver.find_element_by_xpath("//td[@id='msDslTransportTble_@Packets_1']")
-            results.append(int(Packets_Downstream.text))
-            samples['Packets_Downstream'] = int(Packets_Downstream.text)
+            sample['Packets_Downstream'] = int(Packets_Downstream.text)
             ctr = 0
             break
         except NoSuchElementException as Exception:
@@ -160,21 +145,22 @@ def get_dsl_transport():
 
     if ctr == 0:
         Packets_Upstream = driver.find_element_by_xpath("//td[@id='msDslTransportTble_@Packets_2']")
-        results.append(int(Packets_Upstream.text))
-        samples['Packets_Upstream'] = int(Packets_Upstream.text)
+        sample['Packets_Upstream'] = int(Packets_Upstream.text)
 
         Total_Usage_Downstream = driver.find_element_by_xpath("//td[@id='msDslTransportTble_@Total_Usage_1']")
-        results.append(float(refp(Total_Usage_Downstream.text)))
-        samples['Total_Usage_Downstream'] =  float(refp(Total_Usage_Downstream.text))
+        sample['Total_Usage_Downstream'] =  float(refp(Total_Usage_Downstream.text))
 
         Total_Usage_Upstream = driver.find_element_by_xpath("//td[@id='msDslTransportTble_@Total_Usage_2']")
-        results.append(float(refp(Total_Usage_Upstream.text)))
-        samples['Total_Usage_Upstream'] = float(refp(Total_Usage_Upstream.text))
+        sample['Total_Usage_Upstream'] = float(refp(Total_Usage_Upstream.text))
 
-        return results
+        return sample 
     else:
-        return [-1.0, -1.0, -1.0, -1.0]
+        sample['Packets_Downstream'] = -1.0 
+        sample['Packets_Upstream'] = -1.0 
+        sample['Total_Usage_Downstream'] = -1.0 
+        sample['Total_Usage_Upstream'] = -1.0 
 
+        return sample 
 
 def get_dsl_channel():
     # the <p>DS Channel</p> and it's table holds CRC and FEC Correction stats for the 
@@ -189,17 +175,17 @@ def get_dsl_channel():
 
     # this is only Near End ... we're droppying the Far End data
 
-    results = list()
+    # this code does NOT wait for find_element_by_xpath, to find an element ... maybe lucky so far???
+
+    sample = {} 
 
     RS_FEC = driver.find_element_by_xpath("//td[@id='msDslChannelTble_@RS_FEC_Correction_1']")
-    results.append(int(RS_FEC.text))
-    samples['RS_FEC'] = int(RS_FEC.text)
+    sample['RS_FEC'] = int(RS_FEC.text)
 
     CRC_Errors = driver.find_element_by_xpath("//td[@id='msDslChannelTble_@CRC_Errors_1']")
-    results.append(int(CRC_Errors.text))
-    samples['CRC_Errors'] =  int(CRC_Errors.text)
+    sample['CRC_Errors'] =  int(CRC_Errors.text)
 
-    return results
+    return sample 
 
 def get_dsl_power():
     # the <p> DSL Power paragraph and its <tr> table holds SNR, Power, which
@@ -210,13 +196,12 @@ def get_dsl_power():
     #print("Power_downstream:", refp(Power_downstream.text),"dbm")
     #print("Power_upstream:", refp(Power_upstream.text),"dbm")
 
-    results = list()
+    sample = {}
     ctr = 1
     while ctr < 6:
         try:
             SNR_downstream = driver.find_element_by_xpath("//td[@id='msDslPowerTble_@SNR_1']")
-            results.append(float(refp(SNR_downstream.text)))
-            samples['SNR_downstream'] = float(refp(SNR_downstream.text))
+            sample['SNR_downstream'] = float(refp(SNR_downstream.text))
             ctr = 0
             break
         except NoSuchElementException as Exception:
@@ -226,25 +211,22 @@ def get_dsl_power():
 
     if ctr == 0:
         SNR_upstream = driver.find_element_by_xpath("//td[@id='msDslPowerTble_@SNR_2']")
-        results.append(float(refp(SNR_upstream.text)))
-        samples['SNR_upstream'] =  float(refp(SNR_upstream.text))
+        sample['SNR_upstream'] =  float(refp(SNR_upstream.text))
 
         Power_downstream = driver.find_element_by_xpath("//td[@id='msDslPowerTble_@Power_1']")
-        results.append(float(refp(Power_downstream.text)))
-        samples['Power_downstream'] = float(refp(Power_downstream.text))
+        sample['Power_downstream'] = float(refp(Power_downstream.text))
 
         Power_upstream = driver.find_element_by_xpath("//td[@id='msDslPowerTble_@Power_2']")
-        results.append(float(refp(Power_upstream.text)))
-        samples['Power_upstream'] =  float(refp(Power_upstream.text))
+        sample['Power_upstream'] =  float(refp(Power_upstream.text))
 
-        return results
+        return sample 
     else:
-        samples['SNR_downstream'] = -1.0 
-        samples['SNR_upstream'] =-1.0
-        samples['Power_downstream'] = -1.0 
-        samples['Power_upstream'] = -1.0
+        sample['SNR_downstream'] = -1.0 
+        sample['SNR_upstream'] =-1.0
+        sample['Power_downstream'] = -1.0 
+        sample['Power_upstream'] = -1.0
 
-        return [-1.0, -1.0, -1.0, -1.0] 
+        return sample 
 
 def get_dsl_link():
     # the <p> DSL Link </p> and table holds uptime, train errors and configuration
@@ -258,13 +240,12 @@ def get_dsl_link():
     #print("LinkUptime:", LinkUptime.text)
     #print("LinkTrainErrors:", LinkTrainErrors.text)
     
-    results = list()
+    sample = {}
     ctr = 1
     while ctr < 4:
         try:
             LinkUptime = driver.find_element_by_xpath("//td[@id='LinkUptime']")
-            results.append(LinkUptime.text)
-            samples['LinkUptime'] =  LinkUptime.text
+            sample['LinkUptime'] =  LinkUptime.text
             ctr = 0
             break
         except NoSuchElementException as Exception:
@@ -274,79 +255,343 @@ def get_dsl_link():
 
     if ctr == 0:
         LinkTrainErrors = driver.find_element_by_xpath("//td[@id='LinkTrainErrors']")
-        results.append(int(LinkTrainErrors.text))
-        samples['LinkTrainErrors'] = int(LinkTrainErrors.text)
-        return results
+        sample['LinkTrainErrors'] = int(LinkTrainErrors.text)
+        return sample
     else:
-        samples['LinkUptime'] = 'NULL' 
-        samples['LinkTrainErrors'] = -1 
-        return ['Null', -1]
+        sample['LinkUptime'] = 'NULL' 
+        sample['LinkTrainErrors'] = -1 
+        return sample 
 
+def get_internet_settings():
+    # the <p> Internet Settings </p> and table holds Session Time, Packets Sent, Packets Received 
+    # 
+    # the table appears to refresh, every ~6 seconds
+    # //td[@id='sessionTime']
+    # 0 Days, 1H:19M:57S
+    # //td[@id='packetsSent']
+    # 	22938
+    # //td[@id='packetsReceived']
+    #   61851
 
-def doMain():
+    #//td[@id='internetConnection']
+    #CONNECTED
 
+    internet_status = ''
+    sample = {}
     ctr = 1
     while ctr < 6:
         try:
-            gomain_button = driver.find_element_by_xpath("//a[@id='ms_mainmenu']").click()
+            internetConnection = driver.find_element_by_xpath("//td[@id='internetConnection']")
+            sample['internetConnection'] =  internetConnection.text
+            internet_status =  internetConnection.text
+            while internetConnection.text != 'CONNECTED':
+                time.sleep(1)
+                sample['internetConnection'] =  internetConnection.text
+                internet_status =  internetConnection.text
+            ctr = 0
+            break
+        except NoSuchElementException as Exception:
+            ctr += 1
+            time.sleep(1)
+
+    time.sleep(2)
+    if ctr == 0 :
+        sessionTime = driver.find_element_by_xpath("//td[@id='sessionTime']")
+        sample['sessionTime'] =  sessionTime.text
+
+        packetsSent = driver.find_element_by_xpath("//td[@id='packetsSent']")
+        sample['packetsSent'] = int(packetsSent.text)
+        
+        packetsReceived = driver.find_element_by_xpath("//td[@id='packetsReceived']")
+        sample['packetsReceived'] = int(packetsReceived.text)
+
+        return sample
+    else:
+        sample['internetConnection'] = 'NULL' 
+        sample['sessionTime'] = 'NULL' 
+        sample['packetsSent'] = -1 
+        sample['packetsReceived'] = -1 
+        return sample 
+
+def gotoInternet():
+    ctr = 1
+    while ctr < 4:
+        try:
+            goDsl1Status_button = driver.find_element_by_xpath("//a[@id='internetstatus']").click()
             return 1
         except NoSuchElementException as Exception:
-            #print("gomain_button is NOT yet there")
+            ctr += 1
+            time.sleep(1)
+            print("waiting on Internet to load")
+
+    return -1
+
+def gotoUtilities():
+    ctr = 1
+    while ctr < 4:
+        try:
+            goDsl1Status_button = driver.find_element_by_xpath("//a[@id='utilitiesMain']").click()
+            return 1
+        except NoSuchElementException as Exception:
             ctr += 1
             time.sleep(1)
     return -1
 
-def doDsl1():
+def domodemStatusMain():
+    ctr = 1
+    while ctr < 6:
+        try:
+            goDsl1Status_button = driver.find_element_by_xpath("//a[@id='modemStatusMain']").click()
+            return 1
+        except NoSuchElementException as Exception:
+            print("waiting for modemStatusMain to become available")
+            ctr += 1
+            time.sleep(1)
+    return -1
 
+def gotoDsl1():
     ctr = 1
     while ctr < 4:
         try:
             goDsl1Status_button = driver.find_element_by_xpath("//a[@id='dslstatus-1']").click()
             return 1
         except NoSuchElementException as Exception:
-            #print("goDsl1Status_button is NOT there")
             ctr += 1
             time.sleep(1)
-
     return -1
+
+def gotoMain():
+    ctr = 1
+    while ctr < 6:
+        try:
+            gomain_button = driver.find_element_by_xpath("//a[@id='ms_mainmenu']").click()
+            return 1
+        except NoSuchElementException as Exception:
+            ctr += 1
+            time.sleep(1)
+    return -1
+
+def maybeClearDsl1(clear):
+    # this button is in the DSL1 screen
+    #//a[@class='btn clear-btn']
+    # this button is the popup acknowledgement ...
+    #//a[@id='popup_ok_btn']
+
+    if clear == 'yes':
+        clear_button = driver.find_element_by_xpath("//a[@class='btn clear-btn']").click()
+        time.sleep(2)
+        popup_ok_button = driver.find_element_by_xpath("//a[@id='popup_ok_btn']").click()
+        #print("just cleared DSL1 cumulated stats")
+        return 1
+    else:
+        return 0
+
+def maybeClearInternet(clear):
+    # this button is in the INTERNET screen
+    #//div[@class='btn clr_btn']
+    # this button is the popup acknowledgement ...
+    #//a[@id='popup_ok_btn']
+
+    if clear == 'yes':
+        clear_button = driver.find_element_by_xpath("//div[@class='btn clr_btn']").click()
+        time.sleep(2)
+        popup_ok_button = driver.find_element_by_xpath("//a[@id='popup_ok_btn']").click()
+        #print("just cleared Internet cumulated stats")
+        return 1
+    else:
+        return 0
+
+def maybeReboot(reboot):
+    # this function wings it, in regards to buttons, being loaded.  the click function is waiting on a time.sleep()
+    time.sleep(1)
+    if reboot == 'yes':
+        reboot_button = driver.find_element_by_xpath("//div[@id='reboot_btn']").click()
+        time.sleep(2)
+        popup_ok_button = driver.find_element_by_xpath("//a[@id='popup_ok_btn']").click()
+        return 1
+    else:
+        return 0
+
+def doLoginButton():
+    #don't bother waiting, the usesrname and passwords have waits
+    login_button = driver.find_element_by_xpath("//a[@id='login_apply_btn']").click()
+
+def doLogoutButton(reboot):
+    if reboot == 'now':
+        return 1
+    else:
+        logout_button = driver.find_element_by_xpath("//a[@id='logout_btn']").click()
+        return 0
+
+def gotoResourcetable():
+    ctr = 1
+    while ctr < 4:
+        try:
+            goresourcetable_button = driver.find_element_by_xpath("//a[@id='resourcetable']").click()
+            return 1
+        except NoSuchElementException as Exception:
+            ctr += 1
+            time.sleep(1)
+    return -1
+# //a[@id='resourcetable']
+# //tbody[@id='device_log_tablebody']
+# //td[@id='device_log_table_3125_0']    device
+# //td[@id='device_log_table_3125_1']    protocol
+# //td[@id='device_log_table_3125_2']    destination_ip 
+# //td[@id='device_log_table_3125_3']    sessions 
+# //td[@id='device_log_table_3125_4']    packets_tx
+# //td[@id='device_log_table_3125_5']    packets_rx
+# 
+
+def get_resourcetable(ts):
+
+
+    time.sleep(5)
+    # the device_log_tablebody seems to load immediately, it is however
+    # empty, immediately after going into the resourcetable screen
+    thing_size = 0
+    counter = 0
+    while thing_size == 0:
+        counter += 1
+        aThing = driver.find_element_by_xpath("//p[contains(text(),'LAN Device Log')]")
+        thing_size = len(aThing.text)
+        time.sleep(1)
+
+    aTable = driver.find_element_by_xpath("//tbody[@id='device_log_tablebody']")
+
+    hey = aTable.text
+    stuff = list(hey.splitlines())
+    #print("found x rows:", len(stuff))
+    
+    keys = ['device', 'protocol', 'destinationIp', 'sessions', 'pcktTx', 'pcktRx']
+    stats = {}
+    allEps = list()
+    json_fname = "jsonEndpoint.txt"
+    fo = open(json_fname, "a+")
+
+    i = 0
+    for row in stuff:
+        arow = list()
+        arow = row.split(" ")
+        j = 0
+        for varx in arow:
+            stats[keys[j]] = varx  
+            j += 1
+        #print(i, row, arow, stats,  "******"), 
+        data = {}
+        data[ts0] = stats
+        data_json = json.dumps(data) + '\n'
+        fo.write(data_json)
+        i += 1
+
+    # //a[@id='resourcetable']
+    # //tbody[@id='device_log_tablebody']
+    # //td[@id='device_log_table_3125_0']    device
+
+    # iterate over all the rows
+    # this is very compute intensive, finding each row and
+    # parsing the text result ... giving-up on this
+    #i = 0
+    #raw = list()
+    #for row in aTable.find_elements_by_xpath(".//tr"):
+        #print("row:", i, row.text)
+        #raw[i] = row.text
+        #i += 1
+        #raw.append(row.text)
+        #print([td.text for td in row.find_elements_by_xpath(".//td[@class='dddefault'][1]"])
+        #print([td.text for td in row.xpath(".//td[@id='device_log_table_*']"[text()]))
+
+    fo.close()
+    #print("waited for endpoints for ", counter, "seconds and got: ", i, "rows" )
+    return i 
+
+# .............................................................................
+
+json_fname = "jsonTest.txt"
+json_fname = "json_c1100t.txt"
+
+data = {}
+samples = {}
+
+# change the below, and they become your passline defaults.  you can always 
+# override these variables on the passline
+# from a security perspective, you can hard code your password here, or you
+# can call this application, and pass the password on the command line
+# your call
+password = 'CHANGEMETOYOURMODEMPASSWORD'
+password = 'uxWxrj5g@'
+ip = '192.168.0.1'
+username = 'admin'
+reboot = 'no'
+monitor = "no"
+clear = 'no'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-u', default=username, help="username")
 parser.add_argument('-i', default=ip, help="ip")
 parser.add_argument('-p', default=password, help="password")
+parser.add_argument('-r', default=reboot, help="reboot")
+parser.add_argument('-m', default=monitor, help="monitor")
+parser.add_argument('-c', default=clear, help="clear stats")
+
 args = parser.parse_args()
+
 username = args.u
-password = args.p
 ip = args.i
+password = args.p
+reboot = args.r
+monitor = args.m
+clear = args.c
 
-goheadless()
-
-driver = get_modem(ip)
-enter_pw(password)
-enter_user(username)
-login_button = driver.find_element_by_xpath("//a[@id='login_apply_btn']").click()
-doMain()
-doDsl1()
+result = os.system("pkill chromedriver")
+result = os.system("pkill chromium")
+result = os.system("pkill Xvfb")
 
 ts0 = int(round(time.time() * 1000))
-dsl_power_results = get_dsl_power()
-dsl_transport_results = get_dsl_transport()
-dsl_status_results = get_dsl_status()
-dsl_link_results = get_dsl_link()
-dsl_channel_results = get_dsl_channel()
+
+maybe_goheadless(monitor)
+
+driver = get_modem(ip)
+
+enter_pw(password)
+enter_user(username)
+doLoginButton()
+
+gotoMain()
+time.sleep(1)
+domodemStatusMain()
+
+gotoDsl1()
+samples.update(get_dsl_power())
+samples.update(get_dsl_transport())
+samples.update(get_dsl_status())
+samples.update(get_dsl_link())
+samples.update(get_dsl_channel())
+maybeClearDsl1(clear)
+
+gotoInternet()
+samples.update(get_internet_settings())
+maybeClearInternet(clear)
+
+gotoResourcetable()
+eptcount = get_resourcetable(ts0)
+
+gotoUtilities()
+maybeReboot(reboot)
+
 ts1 = int(round(time.time() * 1000))
 delta_ts = ts1 - ts0
 
-final = dsl_power_results + dsl_transport_results + dsl_status_results + dsl_link_results + dsl_channel_results
-final.insert(0, ts0)
-
+doLogoutButton(reboot)
 time.sleep(1)
-logout_button = driver.find_element_by_xpath("//a[@id='logout_btn']").click()
+
 driver.close()
 driver.quit()
 
 data[ts0] = samples      # all the samples in that dict, are the value to the ts0 index
 data_json = json.dumps(data) + '\n'
-fo = open("json_c1100t.txt", "a+")
+fo = open(json_fname, "a+")
 fo.write(data_json)
 fo.close()
+
+result = os.system("pkill Xvfb")
