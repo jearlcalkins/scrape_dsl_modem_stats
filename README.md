@@ -79,9 +79,8 @@ from a terminal session, run the following cmd:
 if you want to put your password, in the application code, you won't have to pass the password, when you call the application  
 
 edit the c1100t_get.py file  
-1. go to line 24
+1. go to line 521
 2. edit the line and enter your modem admin password, where it says "CHANGEMETO ..."  
-
 
 #### how-to run examples  
 view the pass variable options:
@@ -92,6 +91,14 @@ run the application, taking default modem IP, username: admin, password: (what i
 
 run the application, passing the modem's password 'G0CUBz':  
 `python3 c1100t_get.py -p G0CUBz`  
+
+run the application from the crontab
+`0,30 * * * * python3 c1100t_get.py -i 192.168.0.1`
+`2,32 * * * * python3 c1100t_json2csv.py`
+`35 1 * * * python3 c1100t_getv3.py -r yes -c yes` 
+The modem will be scraped at the top (0) and bottom half (30) of the hour, every hour (c1100t_get.py)
+The json log file (json_c1100t.txt) will be converted to a csv file (out.csv) at 2 minutes and 32 minutes after the hour, every hour (c110t_json2csv.py)
+The modem will be restarted (-r yes) and the modem-router stats will be cleared to 0s (-c yes) (c1100t_get.py) 
 
 BTW, I found a bash shell issue when passing a password, that happened to contain a '!' (aka a bang), followed by a number.  When passing a password like: 'Clxy!123', bash passed the application 'Clxy', then looked-up the 123rd line of bash history, and passed that command to the python applicaton. The application was confused and crashed, when it was passed 'Clxy' and a historical bash command.  Because I like '!' special characters in my passwords, this caused problems and led me to hardcoding the password, in the application code.
 
