@@ -1,7 +1,7 @@
 # scrape_dsl_modem_stats
 scrape C1100T DSL modem stats with the python selenium module.  the applcation is: c1100t_get.py
 
-#### Logged Data  
+#### Logged DSL and router stats
 everytime the c1100t_get.py application successfully runs and scrapes the dsl modem data, the data will be logged as a JSON record, and appended to the **json_c1100t.txt** file.  The following is a single JSON dataset example:  
 
 *`{"1586973621148": {"SNR_downstream": 10.4, "SNR_upstream": 7.9, "Power_downstream": 16.9, "Power_upstream": 8.3, "Packets_Downstream": 14184969, "Packets_Upstream": 7311236, "Total_Usage_Downstream": 142108.65, "Total_Usage_Upstream": 8267.947, "dslUpstreamElement": 0.895, "dslDownstreamElement": 23.103, "dslLineStatusElement": "GOOD", "LinkUptime": "3 Days,0H:29M:55S", "LinkTrainErrors": 1, "RS_FEC": 242868, "CRC_Errors": 0}}`*  
@@ -33,6 +33,18 @@ the following is a 4 record snippet of the out.txt CSV file:
 1586714418799,10.3,8.4,16.9,8.6,80778,46330,805.77,46.372,23.103,0.895,GOOD,1,893,0
 1586715321058,10.3,8.3,16.9,8.6,153647,75193,1592.121,76.125,23.103,0.895,GOOD,1,1332,0
 1586716219264,10.3,8.4,16.9,8.6,203270,93556,2136.278,96.844,23.103,0.895,GOOD,1,2026,0`
+
+#### Logged router end point stats
+
+the following json snippet is for a 
+
+`{"1591714802709": {"device": "rokuOldEthernet", "protocol": "tcp/41614", "destinationIp": "3.84.46.120", "sessions": "2", "pcktTx": "258", "pcktRx": "17971"}}
+{"1591714802709": {"device": "rokuOldEthernet", "protocol": "udp/01975", "destinationIp": "172.29.243.255", "sessions": "2", "pcktTx": "2", "pcktRx": "0"}}
+{"1591714802709": {"device": "rokuOldEthernet", "protocol": "tcp/48743", "destinationIp": "13.35.125.51", "sessions": "2", "pcktTx": "910", "pcktRx": "17820"}}
+{"1591714802709": {"device": "rokuOldEthernet", "protocol": "tcp/43186", "destinationIp": "199.117.103.146", "sessions": "2", "pcktTx": "141085", "pcktRx": "475046"}}
+{"1591714802709": {"device": "rokuOldEthernet", "protocol": "tcp/55354", "destinationIp": "50.18.203.14", "sessions": "1", "pcktTx": "6", "pcktRx": "3"}}
+{"1591714802709": {"device": "rokuOldEthernet", "protocol": "tcp/33734", "destinationIp": "199.117.103.144", "sessions": "2", "pcktTx": "8650", "pcktRx": "968761"}}
+{"1591714802709": {"device": "rokuOldEthernet", "protocol": "udp/53142", "destinationIp": "192.168.0.1", "sessions": "1", "pcktTx": "1", "pcktRx": "1"}}`
 
 #### the following installation is for a Raspberry Pi (RPI)
 Am currently running this on an older RPI 2  
