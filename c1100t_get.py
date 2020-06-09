@@ -519,7 +519,6 @@ samples = {}
 # can call this application, and pass the password on the command line
 # your call
 password = 'CHANGEMETOYOURMODEMPASSWORD'
-password = 'uxWxrj5g@'
 ip = '192.168.0.1'
 username = 'admin'
 reboot = 'no'
